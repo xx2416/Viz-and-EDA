@@ -1,0 +1,128 @@
+---
+title: "Viz and EDA"
+author: "Xicheng Xie"
+date: "2022-09-29"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Let's import data
+
+```{r}
+library(tidyverse)
+library(ggridges)
+```
+
+```{r }
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+## make a scatter plot
+```{r scatter}
+weather_df %>% 
+  drop_na() %>% 
+  ggplot(aes(x=tmin,y=tmax))+
+  geom_point()
+```
+## another way of coding this
+we can first save this and then add geom staffs
+```{r}
+plot_weather = 
+  weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) 
+
+plot_weather + geom_point()
+
+```
+
+## let's fancy this up a bit
+```{r}
+weather_df %>%
+  drop_na() %>% 
+  ggplot(aes(x=tmin,y=tmax))+
+  geom_point(aes(color=name))+
+  geom_smooth()
+```
+
+```{r}
+weather_df %>%
+  drop_na() %>% 
+  ggplot(aes(x=tmin,y=tmax,color=name))+
+  geom_point()+
+  geom_smooth()
+```
+
+## make separate panels
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) + 
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  facet_grid(. ~ name) ## !!!!
+```
+
+use date as the x
+```{r}
+ggplot(weather_df, aes(x = date, y = tmax, color = name)) + 
+  geom_point(aes(size = prcp), alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  facet_grid(. ~ name)
+```
+
+## Univariate plots
+
+histograms,barplots,boxplots,violins
+```{r}
+weather_df %>% 
+  ggplot(aes(x=tmax,fill=name))+
+  geom_histogram()+
+  facet_grid(.~name)
+```
+another options!!
+```{r}
+weather_df %>% 
+  ggplot(aes(x=tmax,fill=name))+
+  geom_density(alpha=.3)+
+  facet_grid(.~name)
+```
+```{r}
+ggplot(weather_df, aes(x = tmax, y = name)) + 
+  geom_density_ridges(scale = .85)
+```
+
+## saving and embedding plots
+
+First let's save a plot
+```{r}
+weather_scatterplot<-
+  weather_df %>% 
+  ggplot(aes(x=date,y=tmax,color=name))+
+  geom_point(aes(size=prcp),alpha=.3)+
+  geom_smooth(se=FALSE)+
+  facet_grid(.~name)
+
+ggsave(
+  file="results/weather_scatterplot.pdf",
+  plot = weather_scatterplot,
+  width = 10,
+  height = 7
+)
+```
+
